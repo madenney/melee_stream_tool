@@ -1,0 +1,16 @@
+{
+  "mic": {
+    "nick_regex": "UMC404HD 192k",
+    "name_regex": "alsa_input.usb-BEHRINGER_UMC404HD_192k-00.analog-surround-40",
+    "port": "capture_FL"
+  },
+  "phones": {
+    "nick_regex": "Arctis Nova 7X",
+    "name_regex": "alsa_output.usb-SteelSeries_Arctis_Nova_7X-00.analog-stereo",
+    "port": "playback_FL"
+  },
+  "discord": {
+    "app_regex": "^Discord$"
+  },
+  "version": 1
+}

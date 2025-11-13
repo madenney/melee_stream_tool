@@ -1,0 +1,30 @@
+<!DOCTYPE patchbay>
+<patchbay name="test2" version="0.9.6">
+ <items>
+  <item node-type="pipewire" port-type="pipewire-audio">
+   <output node="Arctis Nova 7X Analog Stereo [Monitor]" port="Arctis Nova 7X:monitor_FR"/>
+   <input node="UMC404HD 192k Analog Surround 4.0" port="UMC404HD 192k:playback_RR"/>
+  </item>
+  <item node-type="pipewire" port-type="pipewire-audio">
+   <output node="Arctis Nova 7X Analog Stereo [Monitor]" port="Arctis Nova 7X:monitor_FL"/>
+   <input node="Arctis Nova 7X Analog Stereo" port="Arctis Nova 7X:playback_FR"/>
+  </item>
+  <item node-type="pipewire" port-type="pipewire-audio">
+   <output node="HDA NVidia Digital Stereo (HDMI 2) [Monitor]" port="HDA NVidia:monitor_FL"/>
+   <input node="UMC404HD 192k Analog Surround 4.0" port="UMC404HD 192k:playback_RR"/>
+  </item>
+  <item node-type="pipewire" port-type="pipewire-audio">
+   <output node="USB Audio Digital Stereo (IEC958)" port="USB Audio:capture_FR"/>
+   <input node="UMC404HD 192k Analog Surround 4.0" port="UMC404HD 192k:playback_RR"/>
+  </item>
+  <item node-type="pipewire" port-type="pipewire-audio">
+   <output node="USB Audio Digital Stereo (IEC958) [Monitor]" port="USB Audio:monitor_FR"/>
+   <input node="UMC404HD 192k Analog Surround 4.0" port="UMC404HD 192k:playback_RR"/>
+  </item>
+  <item node-type="pipewire" port-type="pipewire-audio">
+   <output node="Arctis Nova 7X Mono" port="Arctis Nova 7X:capture_MONO"/>
+   <input node="HDA NVidia Digital Stereo (HDMI 2)" port="HDA NVidia:playback_FR"/>
+  </item>
+ </items>
+</patchbay>
+
