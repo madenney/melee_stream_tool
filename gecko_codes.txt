@@ -1,0 +1,3 @@
+$Optional: Force 2P Center HUD [UnclePunch]
+*HUD for Players occupy the P2 and P3 Positions on the Screen
+0416e9ac 38600002

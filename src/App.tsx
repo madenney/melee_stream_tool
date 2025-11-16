@@ -60,25 +60,43 @@ export default function App() {
 
   return (
     <main className="app">
-      <h1>Melee Overlay Control</h1>
 
+      {/* === MATCH META === */}
+      <section>
+        <div className="meta">
+          <input
+            value={meta.round}
+            onChange={(e) => updateField("meta.round", e.target.value)}
+            placeholder="Title"
+          />
+          <select
+            value={meta.bestOf}
+            onChange={(e) =>
+              updateField("meta.bestOf", Number(e.target.value))
+            }
+          >
+            <option value={3}>Best of 3</option>
+            <option value={5}>Best of 5</option>
+          </select>
+
+
+        </div>
+      </section>
       {/* === PLAYERS === */}
       <section>
-        <h2>Players</h2>
         <div className="players">
           {/* === P1 === */}
           <div className="player">
-            <h3>P1 ({p1.side})</h3>
             <input
               value={p1.tag}
               onChange={(e) => updateField("p1.tag", e.target.value)}
               placeholder="Tag"
             />
-            <input
+            {/* <input
               value={p1.handle ?? ""}
               onChange={(e) => updateField("p1.handle", e.target.value)}
               placeholder="@handle"
-            />
+            /> */}
 
             {/* Character select */}
             <select
@@ -122,17 +140,16 @@ export default function App() {
 
           {/* === P2 === */}
           <div className="player">
-            <h3>P2 ({p2.side})</h3>
             <input
               value={p2.tag}
               onChange={(e) => updateField("p2.tag", e.target.value)}
               placeholder="Tag"
             />
-            <input
+            {/* <input
               value={p2.handle ?? ""}
               onChange={(e) => updateField("p2.handle", e.target.value)}
               placeholder="@handle"
-            />
+            /> */}
 
             <select
               value={(p2.character as CharacterName | undefined) ?? ""}
@@ -176,40 +193,6 @@ export default function App() {
         <div className="buttons">
           <button onClick={swap}>Swap Sides</button>
           <button onClick={save}>Save State</button>
-        </div>
-      </section>
-
-      {/* === MATCH META === */}
-      <section>
-        <h2>Match Info</h2>
-        <div className="meta">
-          <input
-            value={meta.round}
-            onChange={(e) => updateField("meta.round", e.target.value)}
-            placeholder="Round"
-          />
-          <select
-            value={meta.bestOf}
-            onChange={(e) =>
-              updateField("meta.bestOf", Number(e.target.value))
-            }
-          >
-            <option value={3}>Best of 3</option>
-            <option value={5}>Best of 5</option>
-          </select>
-          <input
-            type="number"
-            value={meta.gameNumber ?? ""}
-            onChange={(e) =>
-              updateField("meta.gameNumber", Number(e.target.value))
-            }
-            placeholder="Game #"
-          />
-          <input
-            value={meta.stage ?? ""}
-            onChange={(e) => updateField("meta.stage", e.target.value)}
-            placeholder="Stage"
-          />
         </div>
       </section>
     </main>
