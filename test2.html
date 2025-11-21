@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Lunar Melee – Caster WebRTC Feed</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.jsdelivr.net/npm/ovenplayer/dist/ovenplayer.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #050505;
+      color: #eee;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+                   Roboto, sans-serif;
+    }
+    #player {
+      width: 100vw;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <div id="player"></div>
+  <script>
+    const HOST   = "192.81.132.158";
+    const APP    = "app";
+    const STREAM = "test";
+
+    const WEBRTC_URL = `ws://${HOST}:3333/${APP}/${STREAM}`;
+
+    const player = OvenPlayer.create("player", {
+      autoStart: true,
+      mute: false,
+      sources: [
+        {
+          label: "WebRTC (Caster)",
+          type: "webrtc",
+          file: WEBRTC_URL,
+          framerate: 10   // hint; actual is whatever you send
+        }
+      ],
+      // Be as aggressive as we reasonably can
+      webrtcConfig: {
+        connectionTimeout: 3000,   // fail fast if it can’t connect
+        timeoutMaxRetry: 1,
+        iceTransportPolicy: "all", // allow UDP; don’t force TCP unless you must
+        useStereo: true
+      }
+    });
+
+    player.on("stateChanged", (data) => {
+      console.log("[Caster WebRTC] state:", data);
+    });
+    player.on("error", (err) => {
+      console.error("[Caster WebRTC] error:", err);
+    });
+  </script>
+</body>
+</html>

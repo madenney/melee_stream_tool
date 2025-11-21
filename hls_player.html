@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>LL-HLS Test</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+</head>
+<body style="margin:0; background:black;">
+  <video id="video" controls autoplay style="width:100vw; height:100vh; background:black;"></video>
+  <script>
+    const video = document.getElementById("video");
+    const src = "http://172.235.33.35:3333/app/test/llhls.m3u8";
+
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      // Safari, some native players
+      video.src = src;
+      video.play();
+    } else if (Hls.isSupported()) {
+      // Most modern browsers
+      const hls = new Hls({ lowLatencyMode: true });
+      hls.loadSource(src);
+      hls.attachMedia(video);
+    } else {
+      alert("HLS not supported in this browser");
+    }
+  </script>
+</body>
+</html>

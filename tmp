@@ -1,0 +1,5 @@
+docker run -it --rm --name certbot \
+  -v "$(pwd)/letsencrypt:/etc/letsencrypt" \
+  -p 80:80 \
+  certbot/certbot certonly --standalone \
+  -d lunarmelee.com --non-interactive --agree-tos --email matt.a.denney@gmail.com

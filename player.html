@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Live Stream Viewer</title>
+
+  <!-- OvenPlayer for WebRTC + HLS -->
+  <script src="https://cdn.jsdelivr.net/npm/ovenplayer/dist/ovenplayer.js"></script>
+
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      background: #000;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #eee;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+    #top-bar {
+      position: absolute;
+      z-index: 10;
+      top: 12px;
+      left: 12px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 6px 10px;
+      background: rgba(0, 0, 0, 0.55);
+      border-radius: 999px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    #status-pill {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    #status-pill.live {
+      background: #ff1744;
+      color: #fff;
+    }
+    #status-pill.offline {
+      background: #555;
+      color: #ddd;
+    }
+    #controls {
+      display: flex;
+      gap: 6px;
+      margin-left: 6px;
+    }
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 11px;
+      cursor: pointer;
+      background: #222;
+      color: #ddd;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn:hover {
+      background: #333;
+    }
+    #error-banner {
+      position: absolute;
+      z-index: 10;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      max-width: 90vw;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      background: rgba(244, 67, 54, 0.9);
+      color: #fff;
+      display: none;
+    }
+    #player-container {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      height: 100%;
+    }
+    #player {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <!-- Overlay UI -->
+  <div id="top-bar">
+    <div id="status-pill" class="offline">Offline</div>
+    <div id="controls">
+      <button id="btn-popout" class="btn">Pop out</button>
+      <button id="btn-mute" class="btn">Unmute</button>
+      <button id="btn-fullscreen" class="btn">Fullscreen</button>
+    </div>
+  </div>
+
+  <div id="error-banner"></div>
+
+  <div id="player-container">
+    <div id="player"></div>
+  </div>
+
+  <script>
+    /********************************************************
+     * CONFIG
+     ********************************************************/
+    const CONFIG = {
+      omeHost: "172.235.33.35",   // <- change to your domain later
+      webrtcPort: 3333,
+      hlsPort: 3333,
+
+      appName: "app",
+      streamName: "test",
+
+      autoStart: true,
+      autoFallbackToHls: true   // fallback is automatic, not user-visible
+    };
+
+    const pageIsHttps = window.location.protocol === "https:";
+    const wsScheme   = pageIsHttps ? "wss"  : "ws";
+    const httpScheme = pageIsHttps ? "https": "http";
+
+    const WEBRTC_URL = `${wsScheme}://${CONFIG.omeHost}:${CONFIG.webrtcPort}/${CONFIG.appName}/${CONFIG.streamName}`;
+    const HLS_URL    = `${httpScheme}://${CONFIG.omeHost}:${CONFIG.hlsPort}/${CONFIG.appName}/${CONFIG.streamName}/llhls.m3u8`;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const isPopup   = urlParams.get("popup") === "1";
+
+    /********************************************************
+     * UI
+     ********************************************************/
+    const statusPill     = document.getElementById("status-pill");
+    const btnPopout      = document.getElementById("btn-popout");
+    const btnMute        = document.getElementById("btn-mute");
+    const btnFs          = document.getElementById("btn-fullscreen");
+    const errorBanner    = document.getElementById("error-banner");
+    const playerContainer = document.getElementById("player-container");
+
+    // Hide popout button inside the popout window itself
+    if (isPopup && btnPopout) {
+      btnPopout.style.display = "none";
+    }
+
+    let player     = null;
+    let isMuted    = true;
+    let inFallback = false;  // true once we’ve switched to HLS
+
+    function setStatus(live) {
+      if (live) {
+        statusPill.textContent = "Live";
+        statusPill.classList.remove("offline");
+        statusPill.classList.add("live");
+      } else {
+        statusPill.textContent = "Offline";
+        statusPill.classList.remove("live");
+        statusPill.classList.add("offline");
+      }
+    }
+
+    function showError(msg) {
+      console.error(msg);
+      errorBanner.textContent = msg;
+      errorBanner.style.display = "block";
+      clearTimeout(showError._timer);
+      showError._timer = setTimeout(() => {
+        errorBanner.style.display = "none";
+      }, 6000);
+    }
+
+    function toggleMute() {
+      if (!player) return;
+      isMuted = !isMuted;
+      player.setMute(isMuted);
+      btnMute.textContent = isMuted ? "Unmute" : "Mute";
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        playerContainer.requestFullscreen().catch(err => {
+          console.error("Fullscreen error:", err);
+        });
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    function openPopout() {
+      const url = new URL(window.location.href);
+      url.searchParams.set("popup", "1");
+      window.open(
+        url.toString(),
+        "ome_popout",
+        "width=1280,height=720,resizable=yes,scrollbars=no"
+      );
+    }
+
+    /********************************************************
+     * PLAYER INIT + FALLBACK LOGIC
+     ********************************************************/
+    function destroyPlayer() {
+      if (player) {
+        try { player.remove(); } catch (_) {}
+        player = null;
+      }
+    }
+
+    function initPlayerWebRTC() {
+      destroyPlayer();
+      inFallback = false;
+      setStatus(false);
+      errorBanner.style.display = "none";
+
+      const sources = [{
+        label: "WebRTC",
+        type: "webrtc",
+        file: WEBRTC_URL
+      }];
+
+      console.log("Initializing OvenPlayer (WebRTC) with sources:", sources);
+
+      player = OvenPlayer.create("player", {
+        autoStart: CONFIG.autoStart,
+        mute: true,      // start muted for autoplay rules
+        controls: true,
+        currentProtocolOnly: true,
+        sources
+      });
+
+      isMuted = true;
+      btnMute.textContent = "Unmute";
+
+      player.on("play", () => {
+        console.log("WebRTC playback started");
+        setStatus(true);
+      });
+
+      player.on("stop", () => {
+        setStatus(false);
+      });
+
+      player.on("error", (err) => {
+        console.error("OvenPlayer WebRTC error:", err);
+
+        if (CONFIG.autoFallbackToHls && !inFallback) {
+          showError("WebRTC unstable, falling back to HLS…");
+          initPlayerHLS();
+        } else {
+          setStatus(false);
+          showError("Playback error. Stream may be offline.");
+        }
+      });
+
+      // First click → auto-unmute
+      playerContainer.addEventListener("click", function handleClick() {
+        if (player && isMuted) {
+          toggleMute();
+        }
+        playerContainer.removeEventListener("click", handleClick);
+      }, { once: true });
+    }
+
+    function initPlayerHLS() {
+      destroyPlayer();
+      inFallback = true;
+      setStatus(false);
+      errorBanner.style.display = "none";
+
+      const sources = [{
+        label: "HLS",
+        type: "hls",
+        file: HLS_URL
+      }];
+
+      console.log("Initializing OvenPlayer (HLS fallback) with sources:", sources);
+
+      player = OvenPlayer.create("player", {
+        autoStart: true,
+        mute: true,
+        controls: true,
+        currentProtocolOnly: true,
+        sources
+      });
+
+      isMuted = true;
+      btnMute.textContent = "Unmute";
+
+      player.on("play", () => {
+        console.log("HLS playback started");
+        setStatus(true);
+      });
+
+      player.on("stop", () => {
+        setStatus(false);
+      });
+
+      player.on("error", (err) => {
+        console.error("OvenPlayer HLS error:", err);
+        setStatus(false);
+        showError("Playback error. Stream may be offline.");
+      });
+
+      playerContainer.addEventListener("click", function handleClick() {
+        if (player && isMuted) {
+          toggleMute();
+        }
+        playerContainer.removeEventListener("click", handleClick);
+      }, { once: true });
+    }
+
+    /********************************************************
+     * BUTTON HOOKS
+     ********************************************************/
+    btnMute.addEventListener("click", toggleMute);
+    btnFs.addEventListener("click", toggleFullscreen);
+    btnPopout.addEventListener("click", openPopout);
+
+    /********************************************************
+     * BOOT
+     ********************************************************/
+    window.addEventListener("load", () => {
+      initPlayerWebRTC();
+    });
+  </script>
+</body>
+</html>

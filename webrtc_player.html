@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>OME WebRTC Test</title>
+  <script src="https://cdn.jsdelivr.net/npm/ovenplayer/dist/ovenplayer.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      height: 100%;
+      overflow: hidden;
+    }
+    #player {
+      width: 100vw;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <div id="player"></div>
+  <script>
+    const player = OvenPlayer.create("player", {
+      autoStart: true,
+      controls: true,
+      sources: [{
+        label: "WebRTC",
+        type: "webrtc",
+        file: "ws://172.235.33.35:3333/app/test"
+      }]
+    });
+
+    player.on("error", function (error) {
+      console.error("OvenPlayer error:", error);
+    });
+  </script>
+</body>
+</html>

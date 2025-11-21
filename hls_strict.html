@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>LL-HLS Strict Player</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <style>
+    body { margin: 0; background: #000; }
+    #video { width: 100vw; height: 100vh; background: #000; }
+  </style>
+</head>
+<body>
+  <video id="video" controls autoplay playsinline muted></video>
+
+  <script>
+    const src = "http://172.235.33.35:3333/app/test/llhls.m3u8";
+    const video = document.getElementById("video");
+
+    function start() {
+      if (Hls.isSupported()) {
+        const hls = new Hls({
+          lowLatencyMode: true,
+          backBufferLength: 30,
+        });
+
+        hls.on(Hls.Events.ERROR, (e, data) => {
+          console.error("HLS ERROR:", data);
+        });
+
+        hls.loadSource(src);
+        hls.attachMedia(video);
+      } else {
+        alert("hls.js not supported in this browser");
+        console.error("Hls.isSupported() returned false");
+      }
+    }
+
+    // Autoplay rules can still be annoying, but we muted by default.
+    // If it doesn't start automatically, click once.
+    start();
+  </script>
+</body>
+</html>
