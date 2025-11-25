@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { OverlayState } from "../types/overlay";
+import { MultiOverlayState } from "../types/overlay";
 import "./App.css";
 import {
   CHARACTER_COLORS,
@@ -11,28 +11,73 @@ import {
 
 
 export default function App() {
-  const [state, setState] = useState<OverlayState | null>(null);
+  const [state, setState] = useState<MultiOverlayState | null>(null);
+  const [activeSetup, setActiveSetup] = useState<number>(0);
+  const [status, setStatus] = useState<string>("");
 
   useEffect(() => {
-    invoke<OverlayState>("get_state").then(setState).catch(console.error);
+    invoke<MultiOverlayState>("get_state")
+      .then((s) => {
+        console.log("[ui] initial state loaded", s);
+        setState(s);
+      })
+      .catch((err) => {
+        console.error("[ui] get_state failed", err);
+      });
   }, []);
 
   async function save() {
-    if (!state) return;
-    await invoke("update_state", { newState: state });
+    setStatus("Saving…");
+    if (!state) {
+      setStatus("No state loaded");
+      return;
+    }
+    try {
+      const updated = await invoke<MultiOverlayState>("update_state", {
+        newState: state,
+      });
+      setState(updated);
+      setStatus("Saved");
+    } catch (e) {
+      console.error("update_state failed", e);
+      const msg =
+        e instanceof Error
+          ? e.message
+          : typeof e === "string"
+            ? e
+            : JSON.stringify(e);
+      setStatus(`Save failed: ${msg}`);
+    }
   }
 
   async function swap() {
-    const updated = await invoke<OverlayState>("swap_sides");
-    setState(updated);
+    setStatus("Swapping…");
+    try {
+      const updated = await invoke<MultiOverlayState>("swap_sides", {
+        setupIndex: activeSetup,
+      });
+      setState(updated);
+      setStatus("Swapped");
+    } catch (e) {
+      console.error("swap_sides failed", e);
+      const msg =
+        e instanceof Error
+          ? e.message
+          : typeof e === "string"
+            ? e
+            : JSON.stringify(e);
+      setStatus(`Swap failed: ${msg}`);
+    }
   }
 
   const updateField = (path: string, value: string | number) => {
     setState((prev) => {
       if (!prev) return prev;
       const clone: any = structuredClone(prev);
+      const target = clone.setups?.[activeSetup] ?? clone.setups?.[0];
+      if (!target) return prev;
       const keys = path.split(".");
-      let obj = clone;
+      let obj = target;
       while (keys.length > 1) obj = obj[keys.shift()!];
       obj[keys[0]] = value;
       return clone;
@@ -45,8 +90,10 @@ export default function App() {
     setState((prev) => {
       if (!prev) return prev;
       const clone: any = structuredClone(prev);
-      clone[playerKey].character = newChar;
-      clone[playerKey].characterColor = newColor;
+      const target = clone.setups?.[activeSetup] ?? clone.setups?.[0];
+      if (!target) return prev;
+      target[playerKey].character = newChar;
+      target[playerKey].characterColor = newColor;
       return clone;
     });
   };
@@ -56,7 +103,12 @@ export default function App() {
 
   if (!state) return <p className="loading">Loading current match…</p>;
 
-  const { p1, p2, meta } = state;
+  const currentSetup =
+    state.setups?.[activeSetup] ?? state.setups?.[0] ?? null;
+  if (!currentSetup)
+    return <p className="loading">No setups loaded.</p>;
+
+  const { p1, p2, meta } = currentSetup;
 
   return (
     <main className="app">
@@ -64,6 +116,17 @@ export default function App() {
       {/* === MATCH META === */}
       <section>
         <div className="meta">
+          <select
+            value={activeSetup}
+            onChange={(e) => setActiveSetup(Number(e.target.value))}
+          >
+            {[0, 1, 2, 3].map((i) => (
+              <option key={i} value={i}>
+                Setup {i + 1}
+              </option>
+            ))}
+          </select>
+
           <input
             value={meta.round}
             onChange={(e) => updateField("meta.round", e.target.value)}
@@ -193,6 +256,7 @@ export default function App() {
         <div className="buttons">
           <button onClick={swap}>Swap Sides</button>
           <button onClick={save}>Save State</button>
+          <span className="status">{status}</span>
         </div>
       </section>
     </main>

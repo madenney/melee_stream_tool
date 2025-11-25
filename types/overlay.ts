@@ -24,7 +24,7 @@ export interface PlayerState {
   character: MeleeCharacter;
   characterColor: CharacterColor;
   score: number;
-  country_code?: string;      
+  countryCode?: string;      
 }
 
 export interface CommentaryState {
@@ -47,4 +47,8 @@ export interface OverlayState {
   p2: PlayerState;
   meta: MatchMeta;
   commentators: CommentaryState[];
+}
+
+export interface MultiOverlayState {
+  setups: OverlayState[];
 }

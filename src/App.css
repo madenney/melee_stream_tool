@@ -61,6 +61,7 @@ input:focus, select:focus, button:focus {
   display: flex;
   gap: 1rem;
   margin-top: 1rem;
+  align-items: center;
 }
 
 button {
@@ -76,6 +77,11 @@ button {
 
 button:hover {
   background: #333;
+}
+
+.status {
+  font-size: 0.9rem;
+  color: #bbb;
 }
 
 .meta {

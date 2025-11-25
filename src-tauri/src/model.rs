@@ -41,3 +41,9 @@ pub struct OverlayState {
     pub meta: MatchMeta,
     pub commentators: Vec<CommentaryState>,
 }
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct AllSetupsState {
+    pub setups: Vec<OverlayState>,
+}
